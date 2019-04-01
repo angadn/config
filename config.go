@@ -1,9 +1,12 @@
 package config
 
-import "os"
+import (
+	"context"
+	"os"
+)
 
-// Provider can be set to configure which Source to use.
-var Provider = func(args ...interface{}) (src Source) {
+// FromEnv gives us a Source from the system's environment.
+func FromEnv() (src Source) {
 	src.SourceImpl = EnvSourceImpl{}
 	return
 }
@@ -13,25 +16,31 @@ type Source struct {
 	SourceImpl
 }
 
-// GetDef returns the value for a key if found, else the passed default value.
-func (src Source) GetDef(key string, def string) (value string) {
-	if value = src.SourceImpl.Get(key); len(value) > 0 {
+// GetDef returns the value for a key if non-empty and no error, else the passed default
+// value.
+func (src Source) GetDef(
+	ctx context.Context, key string, def string,
+) (value string, err error) {
+	if value, err = src.SourceImpl.Get(ctx, key); err != nil || value == "" {
+		value = def
 		return
 	}
 
-	value = def
 	return
 }
 
 // SourceImpl is an interface to implement for any configuration system.
 type SourceImpl interface {
-	Get(key string) (value string)
+	Get(ctx context.Context, key string) (value string, err error)
 }
 
 // EnvSourceImpl is an implementation of SourceImpl using os.Getenv.
 type EnvSourceImpl struct{}
 
 // Get a key from the environment.
-func (src EnvSourceImpl) Get(key string) (value string) {
-	return os.Getenv(key)
+func (src EnvSourceImpl) Get(
+	ctx context.Context, key string,
+) (value string, err error) {
+	value = os.Getenv(key)
+	return
 }
