@@ -38,7 +38,7 @@ func (src Source) Get(ctx context.Context, key Key) (value Value, err error) {
 func (src Source) GetDef(
 	ctx context.Context, key Key, def Value,
 ) (value Value, err error) {
-	if value, err = src.SourceImpl.Get(ctx, key); err != nil || value == "" {
+	if value, err = src.Get(ctx, key); err != nil || value == "" {
 		value = def
 	}
 
