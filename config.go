@@ -5,9 +5,15 @@ import (
 	"os"
 )
 
+// Key is a type-alias to identify our Key strings.
+type Key string
+
+// Value is a type-alias to identify our Value strings.
+type Value string
+
 // FromEnv gives us a Source from the system's environment.
 func FromEnv() (src Source) {
-	src.SourceImpl = EnvSourceImpl{}
+	src.SourceImpl = nilSourceImpl{}
 	return
 }
 
@@ -16,14 +22,28 @@ type Source struct {
 	SourceImpl
 }
 
+// Get the value for a key from the underlying Source Implementation, and if empty
+// fallback on the system environment. In case of error, the value is returned as-is from
+// the source.
+func (src Source) Get(ctx context.Context, key Key) (value Value, err error) {
+	if value, err = src.SourceImpl.Get(ctx, key); err != nil {
+		return
+	}
+
+	if value == "" {
+		value = Value(os.Getenv(string(key)))
+	}
+
+	return
+}
+
 // GetDef returns the value for a key if non-empty and no error, else the passed default
 // value.
 func (src Source) GetDef(
-	ctx context.Context, key string, def string,
-) (value string, err error) {
+	ctx context.Context, key Key, def Value,
+) (value Value, err error) {
 	if value, err = src.SourceImpl.Get(ctx, key); err != nil || value == "" {
 		value = def
-		return
 	}
 
 	return
@@ -31,16 +51,21 @@ func (src Source) GetDef(
 
 // SourceImpl is an interface to implement for any configuration system.
 type SourceImpl interface {
-	Get(ctx context.Context, key string) (value string, err error)
+	Get(ctx context.Context, key Key) (value Value, err error)
+	Set(ctx context.Context, key Key, value Value) (err error)
 }
 
-// EnvSourceImpl is an implementation of SourceImpl using os.Getenv.
-type EnvSourceImpl struct{}
+// nilSourceImpl always returns empty.
+type nilSourceImpl struct{}
 
-// Get a key from the environment.
-func (src EnvSourceImpl) Get(
-	ctx context.Context, key string,
-) (value string, err error) {
-	value = os.Getenv(key)
+func (src nilSourceImpl) Get(
+	ctx context.Context, key Key,
+) (value Value, err error) {
+	return
+}
+
+func (src nilSourceImpl) Set(
+	ctx context.Context, key Key, value Value,
+) (err error) {
 	return
 }

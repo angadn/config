@@ -24,17 +24,20 @@ type MySQLSource struct {
 	db *sql.DB
 }
 
-// Get a key from the database.
-func (src MySQLSource) Get(ctx context.Context, key string) (value string, err error) {
-	err = src.db.QueryRowContext(ctx, table.Selection(
+// Get a key from the database if it exists, else return an empty value with no error.
+// Non-nil errors may occur due to the database connection.
+func (src MySQLSource) Get(ctx context.Context, key Key) (value Value, err error) {
+	if err = src.db.QueryRowContext(ctx, table.Selection(
 		"SELECT %s FROM `configurations` WHERE `name` = ?",
-	), key).Scan(&tabular.Scapegoat{}, &value)
+	), key).Scan(&tabular.Scapegoat{}, &value); err == sql.ErrNoRows {
+		err = nil
+	}
 
 	return
 }
 
 // Set a key in the database.
-func (src MySQLSource) Set(ctx context.Context, key string, value string) (err error) {
+func (src MySQLSource) Set(ctx context.Context, key Key, value Value) (err error) {
 	_, err = src.db.ExecContext(
 		ctx,
 		table.Insertion("%s ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)"),
