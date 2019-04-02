@@ -10,23 +10,23 @@ import (
 // FromMySQL gives us a Source for MySQL.
 func FromMySQL(
 	ctx context.Context, db *sql.DB,
-) (sourceImpl SourceImpl, err error) {
+) (source Source, err error) {
 	if err = db.PingContext(ctx); err != nil {
 		return
 	}
 
-	sourceImpl = MySQLSource{db}
+	source.SourceImpl = mysqlSourceImpl{db}
 	return
 }
 
-// MySQLSource is an implementation of SourceImpl using MySQL.
-type MySQLSource struct {
+// mysqlSource is an implementation of SourceImpl using MySQL.
+type mysqlSourceImpl struct {
 	db *sql.DB
 }
 
 // Get a key from the database if it exists, else return an empty value with no error.
 // Non-nil errors may occur due to the database connection.
-func (src MySQLSource) Get(ctx context.Context, key Key) (value Value, err error) {
+func (src mysqlSourceImpl) Get(ctx context.Context, key Key) (value Value, err error) {
 	if err = src.db.QueryRowContext(ctx, table.Selection(
 		"SELECT %s FROM `configurations` WHERE `name` = ?",
 	), key).Scan(&tabular.Scapegoat{}, &value); err == sql.ErrNoRows {
@@ -37,7 +37,7 @@ func (src MySQLSource) Get(ctx context.Context, key Key) (value Value, err error
 }
 
 // Set a key in the database.
-func (src MySQLSource) Set(ctx context.Context, key Key, value Value) (err error) {
+func (src mysqlSourceImpl) Set(ctx context.Context, key Key, value Value) (err error) {
 	_, err = src.db.ExecContext(
 		ctx,
 		table.Insertion("%s ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)"),

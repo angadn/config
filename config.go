@@ -12,8 +12,8 @@ type Key string
 type Value string
 
 // FromEnv gives us a Source from the system's environment.
-func FromEnv() (src Source) {
-	src.SourceImpl = nilSourceImpl{}
+func FromEnv() (source Source) {
+	source.SourceImpl = nilSourceImpl{}
 	return
 }
 
