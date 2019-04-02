@@ -22,18 +22,14 @@ type Source struct {
 	SourceImpl
 }
 
-// Get the value for a key from the underlying Source Implementation, and if empty
-// fallback on the system environment. In case of error, the value is returned as-is from
-// the source.
+// Get the config Value for a Key from the local environment. If it is empty, check the
+// underlying Source Implementation.
 func (src Source) Get(ctx context.Context, key Key) (value Value, err error) {
-	if value, err = src.SourceImpl.Get(ctx, key); err != nil {
+	if value = Value(os.Getenv(string(key))); value != "" {
 		return
 	}
 
-	if value == "" {
-		value = Value(os.Getenv(string(key)))
-	}
-
+	value, err = src.SourceImpl.Get(ctx, key)
 	return
 }
 
