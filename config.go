@@ -45,6 +45,17 @@ func (src Source) GetDef(
 	return
 }
 
+// Set the config Value for a Key first to the local environment, and then to the underlying
+// Source Implementation.
+func (src Source) Set(ctx context.Context, key Key, value Value) (err error) {
+	if err = os.Setenv(string(key), string(value)); err != nil {
+		return
+	}
+
+	err = src.SourceImpl.Set(ctx, key, value)
+	return
+}
+
 // SourceImpl is an interface to implement for any configuration system.
 type SourceImpl interface {
 	Get(ctx context.Context, key Key) (value Value, err error)
